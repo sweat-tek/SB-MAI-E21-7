@@ -26,4 +26,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run tests with Maven
-        run: mvn -B test --file JHotDraw/pom.xml
+        run: mvn -B test --file ../JHotDraw/pom.xml
