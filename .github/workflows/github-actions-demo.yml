@@ -1,6 +1,12 @@
 name: Java CI
 
-on: [push]
+on:  
+  push:
+    branches:
+      - basic-editing-feature
+  pull_request:
+    branches:
+      - basic-editing-feature
 
 jobs:
   build:
@@ -14,4 +20,4 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
       - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots verify
+        run: mvn -B package --file pom.xml
