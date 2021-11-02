@@ -5,16 +5,12 @@
  */
 package org.jhotdraw.samples.svg.figures;
 
-import java.awt.*;
 import java.awt.geom.*;
-import java.util.*;
 import static org.jhotdraw.draw.AttributeKeys.TRANSFORM;
 import org.jhotdraw.samples.svg.Gradient;
 import static org.jhotdraw.samples.svg.SVGAttributeKeys.FILL_GRADIENT;
 import static org.jhotdraw.samples.svg.SVGAttributeKeys.STROKE_GRADIENT;
 import org.jhotdraw.draw.*;
-import org.jhotdraw.samples.svg.*;
-import org.jhotdraw.geom.*;
 
 /**
  *
