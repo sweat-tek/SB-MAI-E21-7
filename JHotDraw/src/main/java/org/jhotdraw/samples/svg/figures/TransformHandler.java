@@ -17,7 +17,6 @@ import org.jhotdraw.draw.*;
  * @author peter
  */
 public class TransformHandler {
-    
     public void handleTransform(AffineTransform tx, Figure f) {
         if (TRANSFORM.get(f) != null
                 || (tx.getType() & (AffineTransform.TYPE_TRANSLATION)) != tx.getType()) {
