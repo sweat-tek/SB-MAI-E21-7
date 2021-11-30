@@ -63,6 +63,8 @@ public class SVGImageFigure extends SVGAttributedFigure implements SVGFigure, Im
      * imageData.
      */
     private BufferedImage bufferedImage;
+    
+    private DrawStrategy strat;
 
     /** Creates a new instance. */
     public SVGImageFigure() {
@@ -73,6 +75,7 @@ public class SVGImageFigure extends SVGAttributedFigure implements SVGFigure, Im
     public SVGImageFigure(double x, double y, double width, double height) {
         rectangle = new Rectangle2D.Double(x, y, width, height);
         SVGAttributeKeys.setDefaults(this);
+        this.strat = new DrawStrategy();
     }
 
     // DRAWING
@@ -80,42 +83,60 @@ public class SVGImageFigure extends SVGAttributedFigure implements SVGFigure, Im
     @FeatureEntryPoint(JHotDrawFeatures.IMAGE_TOOL)
     public void draw(Graphics2D g) {
         //super.draw(g);
+        //strat.draw(g, this);
+        
+        double opacity = getFigureOpacity();
+        if (opacity == 0d)  
+            return;
+        
+        Composite savedComposite = g.getComposite();
+        if (opacity != 1d) {
+            g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) opacity));
+        }
 
+        BufferedImage image = getBufferedImage();
+        if (image != null) {
+            drawImage(g, image); 
+        } else { 
+            drawBasicShape(g);
+        } 
+        resetComposite(g, opacity, savedComposite);
+    }
+    
+    private double getFigureOpacity(){
         double opacity = OPACITY.get(this);
         opacity = Math.min(Math.max(0d, opacity), 1d);
-        if (opacity != 0d) {
-            Composite savedComposite = g.getComposite();
-            if (opacity != 1d) {
-                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) opacity));
-            }
-
-            BufferedImage image = getBufferedImage();
-            if (image != null) {
-                if (TRANSFORM.get(this) != null) {
-                    // FIXME - We should cache the transformed image.
-                    //         Drawing a transformed image appears to be very slow.
-                    Graphics2D gx = (Graphics2D) g.create();
+        return opacity;
+    }
+    
+    private void drawBasicShape(Graphics2D g){
+        Shape shape = getTransformedShape();
+            g.setColor(Color.red);
+            g.setStroke(new BasicStroke());
+            g.draw(shape);
+    }
+    
+    private void drawImage(Graphics2D g, BufferedImage image){
+        if (TRANSFORM.get(this) != null) {
+            // FIXME - We should cache the transformed image.
+            //         Drawing a transformed image appears to be very slow.
+            Graphics2D gx = (Graphics2D) g.create();
                     
-                    // Use same rendering hints like parent graphics
-                    gx.setRenderingHints(g.getRenderingHints());
+            // Use same rendering hints like parent graphics
+            gx.setRenderingHints(g.getRenderingHints());
                     
-                    gx.transform(TRANSFORM.get(this));
-                    gx.drawImage(image, (int) rectangle.x, (int) rectangle.y, (int) rectangle.width, (int) rectangle.height, null);
-                    gx.dispose();
-                } else {
-                    g.drawImage(image, (int) rectangle.x, (int) rectangle.y, (int) rectangle.width, (int) rectangle.height, null);
-                }
-            } else {
-                Shape shape = getTransformedShape();
-                g.setColor(Color.red);
-                g.setStroke(new BasicStroke());
-                g.draw(shape);
-            }
-
-            if (opacity != 1d) {
-                g.setComposite(savedComposite);
-            }
+            gx.transform(TRANSFORM.get(this));
+            gx.drawImage(image, (int) rectangle.x, (int) rectangle.y, (int) rectangle.width, (int) rectangle.height, null);
+            gx.dispose();
+        } else {
+            g.drawImage(image, (int) rectangle.x, (int) rectangle.y, (int) rectangle.width, (int) rectangle.height, null);
         }
+    }
+    
+    private void resetComposite(Graphics2D g, double opacity, Composite savedComposite){
+        if (opacity != 1d) {
+            g.setComposite(savedComposite);
+        } 
     }
 
     protected void drawFill(Graphics2D g) {
@@ -174,7 +195,7 @@ public class SVGImageFigure extends SVGAttributedFigure implements SVGFigure, Im
         cachedHitShape = null;
     }
 
-    private Shape getTransformedShape() {
+    protected Shape getTransformedShape() {
         if (cachedTransformedShape == null) {
             cachedTransformedShape = (Shape) rectangle.clone();
             if (TRANSFORM.get(this) != null) {
