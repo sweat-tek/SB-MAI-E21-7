@@ -274,12 +274,15 @@ public class Geom {
                     coords[1] = moveToY;
                     break;
             }
+            /*
             Point2D.Double chop = Geom.intersect(
                     prevX, prevY,
                     coords[0], coords[1],
                     p.x, p.y,
                     ctr.x, ctr.y);
-
+            */
+            Point2D.Double chop = Geom.intersect();
+            
             if (chop != null) {
                 double cl = Geom.length2(chop.x, chop.y, p.x, p.y);
                 if (cl < len) {
@@ -545,6 +548,7 @@ public class Geom {
      * Return the point of intersection if it exists, else null
      **/
     // from Doug Lea's PolygonFigure
+    /*--------------------------------------------------------------------------
     public static Point intersect(int xa, // line 1 point 1 x
             int ya, // line 1 point 1 y
             int xb, // line 1 point 2 x
@@ -595,12 +599,13 @@ public class Geom {
             return null;
         }
     }
-
+    --------------------------------------------------------------------------*/
     /**
      * Standard line intersection algorithm
      * Return the point of intersection if it exists, else null
      **/
     // from Doug Lea's PolygonFigure
+    /*--------------------------------------------------------------------------
     public static Point2D.Double intersect(double xa, // line 1 point 1 x
             double ya, // line 1 point 1 y
             double xb, // line 1 point 2 x
@@ -651,7 +656,7 @@ public class Geom {
             return null;
         }
     }
-
+    
     public static Point2D.Double intersect(
             double xa, // line 1 point 1 x
             double ya, // line 1 point 1 y
@@ -714,7 +719,132 @@ public class Geom {
             return null;
         }
     }
+    --------------------------------------------------------------------------*/
+    //--------------------------------------------------------------------------
+    static double ya; 
+    static double yb; 
+    static double yc; 
+    static double yd;
+    
+    static double y1 = yb - ya;
+    static double y2 = ya - yc;
+    static double y3 = yd - yc;
+    static double yp = ya + y1;
+  
+    //double ay = ya;
+    //double by = yb;
+    //double cy = yc;
+    //double dy = yd;
+    
+    static double xa; 
+    static double xb; 
+    static double xc; 
+    static double xd;
+    
+    static double x1 = xb - xa;
+    static double x2 = xa - xc;
+    static double x3 = xd - xc;
+    static double xp = xa + x1;
+    
+    //double ax = xa;
+    //double bx = xb;
+    //double cx = xc;
+    //double dx = xd;
+    
+    static int yai; 
+    static int ybi; 
+    static int yci; 
+    static int ydi;
+        
+    static int y1i = ybi - yai;
+    static int y2i = yai - yci;
+    static int y3i = ydi - yci;
+    static int ypi = yai + y1i;
+    
+    //int ayi = yai;
+    //int byi = ybi;
+    //int cyi = yci;
+    //int dyi = ydi;
+    
+    static int xai;
+    static int xbi;
+    static int xci;    
+    static int xdi;
+        
+    static int x1i = xbi - xai;
+    static int x2i = xai - xci;
+    static int x3i = xdi - xci;
+    static int xpi = xai + x1i;
+    
+    //int axi = xai;
+    //int bxi = xbi;
+    //int cxi = xci;
+    //int dxi = xdi;
+    
+    static double denom = (x1 * y3 - y1 * x3);
+    static double rnum = (y2 * x3 - x3 * y3);
+    static double r = rnum / denom;
+    
+    static double snum = (y2 * x1 - x2 * y1);
+    static double s = snum / denom;
+    
+    static double px = xp * r;
+    static double py = yp * r;
+    
+    static int pxi = (int)(xp * r);
+    static int pyi = (int)(yp * r);
+    
+    public static Point2D.Double intersectPrei() { 
+    if ((denom == 0.0) && (rnum == 0.0)) { 
+	if ((xai < xbi && (xbi < xci || xbi < xdi)) || (xai > xbi && (xbi > xci || xbi > xdi))) {
+	    return new Point2D.Double(xbi, ybi);
+	} else {
+            return new Point2D.Double(xai, yai);}
+	} else {
+	    return null;}
+        }
+    
+    public static Point2D.Double intersectPre() { 
+    if ((denom == 0.0) && (rnum == 0.0)) {
+        if ((xa < xb && (xb < xc || xb < xd)) || (xa > xb && (xb > xc || xb > xd))) {
+            return new Point2D.Double(xb, yb);
+        } else {
+            return new Point2D.Double(xa, ya);
+        }} else {
+            return null;
+        }
+    }
+    
+    public static Point2D.Double intersecti() { 
+    intersectPrei();
+    if (0.0 <= r && r <= 1.0 && 0.0 <= s && s <= 1.0) {
+        return new Point2D.Double(pxi, pyi);
+    } else {
+        return null;
+    }
+}
+    
+    public static Point2D.Double intersect() { 
+    intersectPre();
+    if (0.0 <= r && r <= 1.0 && 0.0 <= s && s <= 1.0) {
+        return new Point2D.Double(px, py);
+    } else {
+        return null;
+    }
+}
 
+    public static Point2D.Double intersect(double limit) {
+    intersectPre();
+    if (0.0 <= r && r <= 1.0 && 0.0 <= s && s <= 1.0) {
+	    return new Point2D.Double(px, py);
+	} else {
+        if (length(xa, ya, px, py) <= limit || length(xb, yb, px, py) <= limit || length(xc, yc, px, py) <= limit || length(xd, yd, px, py) <= limit) {
+	    return new Point2D.Double(px, py);
+        }
+        return null;
+    }
+}
+    //--------------------------------------------------------------------------
     /**
      * compute distance of point from line segment, or
      * Double.MAX_VALUE if perpendicular projection is outside segment; or
