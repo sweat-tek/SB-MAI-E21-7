@@ -68,17 +68,14 @@ public class DefaultDrawingViewTransferHandler extends TransferHandler {
     public DefaultDrawingViewTransferHandler() {
     }
 
+    /** Imports data and stores the transferred figures into the supplied transferFigures collection. */
     @Override
     public boolean importData(JComponent comp, Transferable t) {
-        return importData(comp, t, new HashSet<Figure>());
-    }
-
-    /** Imports data and stores the transferred figures into the supplied transferFigures collection. */
-    protected boolean importData(JComponent comp, Transferable t, HashSet<Figure> transferFigures) {
         if (DEBUG) {
             System.out.println(this + ".importData(comp,t)");
         }
-        boolean retValue;
+
+        boolean retValue = false;
         if (comp instanceof DrawingView) {
             final DrawingView view = (DrawingView) comp;
             final Drawing drawing = view.getDrawing();
@@ -88,24 +85,8 @@ public class DefaultDrawingViewTransferHandler extends TransferHandler {
                 if (DEBUG) {
                     System.out.println(this + ".importData failed - drawing has no import formats");
                 }
-                retValue = false;
-
             } else {
-                retValue = false;
-                try {
-                    retValue = importSuitableData(t, transferFigures, drawing, view);
-
-                    // No input format found? Lets see if we got files - we
-                    // can handle these
-                    if (retValue == false && t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-
-                        retValue = importFileData(t, drawing, view);
-                    }
-                } catch (Throwable e) {
-                    if (DEBUG) {
-                        e.printStackTrace();
-                    }
-                }
+                retValue = getClipboardData(t, drawing, view);
             }
         } else {
             retValue = super.importData(comp, t);
@@ -492,8 +473,7 @@ public class DefaultDrawingViewTransferHandler extends TransferHandler {
     }
 
     /** Imports suitable (proper detectable format) data and stores transferred figures into the supplied transferFigures collection */
-    private boolean importSuitableData(Transferable t, HashSet<Figure> transferFigures, Drawing drawing, DrawingView view) throws IOException, UnsupportedFlavorException {
-
+    private boolean importSuitableData(Transferable t, Drawing drawing, DrawingView view) throws IOException, UnsupportedFlavorException {
         boolean retValue = false;
 
         SearchLoop:
@@ -512,7 +492,6 @@ public class DefaultDrawingViewTransferHandler extends TransferHandler {
                     importedFigures.removeAll(existingFigures);
                     view.clearSelection();
                     view.addToSelection(importedFigures);
-//                    transferFigures.addAll(importedFigures);
 
                     undoRedoHelper(importedFigures, drawing);
 
@@ -526,7 +505,6 @@ public class DefaultDrawingViewTransferHandler extends TransferHandler {
 
     /** Able to import certain files (e.g. images) as figure */
     private boolean importFileData(Transferable t, Drawing drawing, DrawingView view) throws IOException, UnsupportedFlavorException {
-
         boolean retValue = true;
 
         final java.util.List<File> files = (java.util.List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
@@ -540,7 +518,6 @@ public class DefaultDrawingViewTransferHandler extends TransferHandler {
             public Object construct() {
                 try {
                     for (File file : files) {
-                        FileFormatLoop:
                         for (InputFormat format : drawing.getInputFormats()) {
                             if (file.isFile() &&
                                     format.getFileFilter().accept(file)) {
@@ -575,6 +552,23 @@ public class DefaultDrawingViewTransferHandler extends TransferHandler {
             }
         }.start();
 
+        return retValue;
+    }
+
+    private boolean getClipboardData(Transferable t, Drawing drawing, DrawingView view) {
+        boolean retValue = false;
+
+        try {
+            retValue = importSuitableData(t, drawing, view);
+
+            if (t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                retValue = importFileData(t, drawing, view);
+            }
+        } catch (Throwable e) {
+            if (DEBUG) {
+                e.printStackTrace();
+            }
+        }
         return retValue;
     }
 
