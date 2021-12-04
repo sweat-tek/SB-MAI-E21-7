@@ -130,6 +130,9 @@ public class SVGImageFigure extends SVGAttributedFigure implements SVGFigure, Im
             gx.dispose();
         } else {
             g.drawImage(image, (int) rectangle.x, (int) rectangle.y, (int) rectangle.width, (int) rectangle.height, null);
+            
+            
+           
         }
     }
     

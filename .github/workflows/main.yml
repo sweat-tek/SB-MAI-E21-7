@@ -1,0 +1,20 @@
+name: Automatic builder SM CI 
+
+on: [pull_request,workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 13
+        uses: actions/setup-java@v2
+        with:
+          java-version: '13'
+          distribution: 'adopt'
+      - name: Build using Maven
+        run: mvn --batch-mode --update-snapshots verify -f ./JHotDraw/pom.xml
+      - name: Executing tests using Maven
+        run: mvn -B test -f ./JHotDraw/pom.xml
+
