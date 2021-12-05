@@ -18,6 +18,8 @@ import java.awt.*;
 import java.beans.*;
 import java.util.prefs.*;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
 import org.jhotdraw.app.JHotDrawFeatures;
 import org.jhotdraw.gui.*;
 import org.jhotdraw.draw.*;
@@ -116,6 +118,37 @@ public /*abstract*/ class AbstractToolBar extends JDisclosureToolBar {
 
     protected int getDefaultDisclosureState() {
         return 0;
+    }
+
+    protected JPanel createPanel(boolean isOpaque, EmptyBorder border){
+        //Instantiate new JPanel component
+        JPanel p = new JPanel();
+        //Remove all default components
+        p.removeAll();
+
+        //Set parameters
+        p.setOpaque(isOpaque);
+        if(border != null){
+            p.setBorder(border);
+        }
+        GridBagLayout layout = new GridBagLayout();
+        p.setLayout(layout);
+
+        return p;
+    }
+
+    protected GridBagConstraints createGridBagConstraints(Integer gridx, Integer gridy, Integer gridheight, Integer gridwidth, Integer anchor,Integer fill, Insets insets){
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        if(gridx != null){ gbc.gridx = gridx; }
+        if(gridy != null){ gbc.gridy = gridy; }
+        if(gridheight != null){ gbc.gridheight = gridheight; }
+        if(gridwidth != null){ gbc.gridwidth = gridwidth; }
+        if(anchor != null){ gbc.anchor = anchor; }
+        if(fill != null){ gbc.fill = fill; }
+        if(insets != null){ gbc.insets = insets; }
+
+        return gbc;
     }
 
     private class ProxyPanel extends JPanel {

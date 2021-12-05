@@ -13,15 +13,18 @@
  */
 package org.jhotdraw.samples.svg.gui;
 
+import dk.sdu.mmmi.featuretracer.lib.FeatureEntryPoint;
 import org.jhotdraw.text.JavaNumberFormatter;
-import javax.swing.border.*;
 import org.jhotdraw.gui.*;
 import org.jhotdraw.util.*;
 import java.awt.*;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.plaf.LabelUI;
 import javax.swing.plaf.SliderUI;
 import javax.swing.plaf.TextUI;
+import org.jhotdraw.app.JHotDrawFeatures;
+import org.jhotdraw.draw.AttributeKey;
 import org.jhotdraw.draw.action.*;
 import org.jhotdraw.gui.plaf.palette.*;
 import org.jhotdraw.text.ColorFormatter;
@@ -34,285 +37,185 @@ import static org.jhotdraw.samples.svg.SVGAttributeKeys.*;
  * @version 1.0 2008-05-18 Created.
  */
 public class CanvasToolBar extends AbstractToolBar {
-
+    
     /** Creates new instance. */
+    @FeatureEntryPoint(JHotDrawFeatures.CANVASTOOLBAR)    
     public CanvasToolBar() {
         ResourceBundleUtil labels = ResourceBundleUtil.getBundle("org.jhotdraw.samples.svg.Labels");
         setName(labels.getString(getID() + ".toolbar"));
         setDisclosureStateCount(3);
     }
 
+    private JPanel addFillColorButton(JPanel p, ResourceBundleUtil labels, GridBagConstraints gbc){
+        AbstractButton btn;
+        btn = ButtonFactory.createDrawingColorButton(editor,
+                            CANVAS_FILL_COLOR, ButtonFactory.HSV_COLORS, ButtonFactory.HSV_COLORS_COLUMN_COUNT,
+                            "attribute.canvasFillColor", labels, null, new Rectangle(3, 3, 10, 10));
+        btn.setUI((PaletteButtonUI) PaletteButtonUI.createUI(btn));
+        new DrawingComponentRepainter(editor, btn);
+        ((JPopupButton) btn).setAction(null, null);
+        
+        p.add(btn, gbc);
+
+        return p;
+    }
+
+    private JPanel addOpacitySliderButton(JPanel p, ResourceBundleUtil labels, GridBagConstraints gbc){
+        JPopupButton opacityPopupButton = new JPopupButton();
+        JAttributeSlider opacitySlider = new JAttributeSlider(JSlider.VERTICAL, 0, 100, 100);
+        opacitySlider.setUI((SliderUI) PaletteSliderUI.createUI(opacitySlider));
+        opacitySlider.setScaleFactor(100d);
+        new DrawingAttributeEditorHandler<Double>(CANVAS_FILL_OPACITY, opacitySlider, editor);
+        opacityPopupButton.add(opacitySlider);
+        labels.configureToolBarButton(opacityPopupButton, "attribute.canvasFillOpacity");
+        opacityPopupButton.setUI((PaletteButtonUI) PaletteButtonUI.createUI(opacityPopupButton));
+        opacityPopupButton.setIcon(
+                new DrawingOpacityIcon(editor, CANVAS_FILL_OPACITY, CANVAS_FILL_COLOR, null, getClass().getResource(labels.getString("attribute.canvasFillOpacity.icon")),
+                new Rectangle(5, 5, 6, 6), new Rectangle(4, 4, 7, 7)));
+        new DrawingComponentRepainter(editor, opacityPopupButton);
+       
+        p.add(opacityPopupButton, gbc);
+
+        return p;
+    }
+    
+    private JPanel addFillColorField(JPanel p, ResourceBundleUtil labels, GridBagConstraints gbc){
+        JAttributeTextField<Color> colorField = new JAttributeTextField<Color>();
+        colorField.setColumns(7);
+        colorField.setToolTipText(labels.getString("attribute.canvasFillColor.toolTipText"));
+        colorField.putClientProperty("Palette.Component.segmentPosition", "first");
+        colorField.setUI((PaletteFormattedTextFieldUI) PaletteFormattedTextFieldUI.createUI(colorField));
+        colorField.setFormatterFactory(ColorFormatter.createFormatterFactory());
+        colorField.setHorizontalAlignment(JTextField.LEFT);
+        new DrawingAttributeEditorHandler<Color>(CANVAS_FILL_COLOR, colorField, editor);
+        
+        p.add(colorField, gbc);
+        
+        return p;
+    }
+    
+    private JPanel addOpacityField(JPanel p, ResourceBundleUtil labels, GridBagConstraints gbc){
+        JAttributeTextField<Double> opacityField = new JAttributeTextField<Double>();
+        opacityField.setColumns(7);
+        opacityField.setToolTipText(labels.getString("attribute.figureOpacity.toolTipText"));
+        opacityField.putClientProperty("Palette.Component.segmentPosition", "first");
+        opacityField.setUI((PaletteFormattedTextFieldUI) PaletteFormattedTextFieldUI.createUI(opacityField));
+        opacityField.setFormatterFactory(JavaNumberFormatter.createFormatterFactory(0d, 100d, 100d, true, false));
+        opacityField.setHorizontalAlignment(JTextField.LEADING);
+        new DrawingAttributeEditorHandler<Double>(CANVAS_FILL_OPACITY, opacityField, editor);
+        p.add(opacityField, gbc);
+        
+        return p;
+    }
+    
+    private JPanel addField(JPanel p, String toolTipText, GridBagConstraints gbc, JAttributeTextField<Double> field, AttributeKey<Double> drawingAttributeKey){
+
+        field.setUI((TextUI) PaletteFormattedTextFieldUI.createUI(field));
+        field.setColumns(3);
+        field.setToolTipText(toolTipText);
+        field.setFormatterFactory(JavaNumberFormatter.createFormatterFactory(1d, 4096d, 1d, true, false));
+        field.setHorizontalAlignment(JTextField.LEADING);
+        new DrawingAttributeEditorHandler<Double>(drawingAttributeKey, field, editor);
+        p.add(field, gbc);
+
+        return p;
+    }
+
+    private JPanel addLabel(JPanel p, String toolTipText, String text, GridBagConstraints gbc, JAttributeTextField<Double> field, JLabel widthLabel){
+
+        widthLabel.setUI((LabelUI) PaletteLabelUI.createUI(widthLabel));
+        widthLabel.setLabelFor(field);
+        widthLabel.setToolTipText(toolTipText);
+        widthLabel.setText(text);
+        p.add(widthLabel, gbc);
+        
+        return p;
+    }
+
+    private JPanel addFieldWithLabel(JPanel p, GridBagConstraints gbc, AttributeKey<Double> fieldKey, String toolTipText, String text, Integer labelGridx, Integer labelGridy, Integer fieldGridx, Integer fieldGridy, Integer fieldGridWidth){
+        JLabel label = new javax.swing.JLabel();
+        JAttributeTextField<Double> field = new JAttributeTextField<Double>();
+
+        gbc = this.createGridBagConstraints(labelGridx, labelGridy, null, null, GridBagConstraints.FIRST_LINE_START, GridBagConstraints.BOTH,  new Insets(3,0,0,0));
+        p = this.addLabel(p, toolTipText, text, gbc, field, label);
+        
+        gbc = this.createGridBagConstraints(fieldGridx, fieldGridy, null, fieldGridWidth, GridBagConstraints.FIRST_LINE_START, GridBagConstraints.BOTH,  new Insets(3,3,0,0));
+        p = this.addField(p, toolTipText, gbc, field, fieldKey);
+
+        return p;
+    }
+
+    private JPanel createHalfToolBar(JPanel p, ResourceBundleUtil labels, GridBagConstraints gbc){
+
+        //Add Fill color button
+        gbc = this.createGridBagConstraints(null, 0, null, 2, GridBagConstraints.FIRST_LINE_START, null, null);
+        p = this.addFillColorButton(p, labels, gbc);
+
+        //Add Opacity slider
+        gbc = this.createGridBagConstraints(2, 0, null, null, GridBagConstraints.FIRST_LINE_START, null, new Insets(0, 3, 0, 0));
+        p = this.addOpacitySliderButton(p, labels, gbc);
+
+        //Add Width and height fields
+        p = this.addFieldWithLabel(p, gbc, CANVAS_WIDTH, labels.getString("attribute.canvasWidth.toolTipText"), labels.getString("attribute.canvasWidth.text"), 0, 1, 1, 1, 2);
+        p = this.addFieldWithLabel(p, gbc, CANVAS_HEIGHT, labels.getString("attribute.canvasHeight.toolTipText"), labels.getString("attribute.canvasHeight.text"), 0, 2, 1, 2, 2);
+
+        return p;
+    }
+
+    private JPanel createFullToolBar(JPanel p, JPanel p1, JPanel p2, JPanel p3, ResourceBundleUtil labels, GridBagConstraints gbc){
+
+        // Fill color field with button
+        gbc = this.createGridBagConstraints(null, null, null, 2, GridBagConstraints.FIRST_LINE_START, GridBagConstraints.HORIZONTAL, null);
+        p1 = this.addFillColorField(p1, labels, gbc);
+        
+        gbc = this.createGridBagConstraints(null, null, null, null, GridBagConstraints.FIRST_LINE_START, null, null);
+        p1 = this.addFillColorButton(p1, labels, gbc);
+
+        // Opacity field with slider
+        gbc = this.createGridBagConstraints(0, 1, null, null, GridBagConstraints.FIRST_LINE_START, null, new Insets(3, 0, 0, 0));
+        p2 = this.addOpacityField(p2, labels, gbc);
+        
+        //Add opacity slider
+        gbc = this.createGridBagConstraints(1, 1, null, null, GridBagConstraints.FIRST_LINE_START, null, new Insets(3, 0, 0, 0));
+        p2 = this.addOpacitySliderButton(p2, labels, gbc);
+
+        //Add Width and height fields
+        p3 = this.addFieldWithLabel(p3, gbc, CANVAS_WIDTH, labels.getString("attribute.canvasWidth.toolTipText"), labels.getString("attribute.canvasWidth.text"), 0, 2, 1, 2, 2);
+        p3 = this.addFieldWithLabel(p3, gbc, CANVAS_HEIGHT, labels.getString("attribute.canvasHeight.toolTipText"), labels.getString("attribute.canvasHeight.text"), 3, 2, 4, 2, 2);
+
+        // Add horizontal strips
+        gbc = this.createGridBagConstraints(null, 0, null, null, GridBagConstraints.FIRST_LINE_START, null, null);
+        p.add(p1, gbc);
+        gbc = this.createGridBagConstraints(null, 1, null, null, GridBagConstraints.FIRST_LINE_START, null, null);
+        p.add(p2, gbc);
+        gbc = this.createGridBagConstraints(null, 2, null, null, GridBagConstraints.FIRST_LINE_START, null, null);
+        p.add(p3, gbc);
+
+        return p;
+    }
+
     @Override
+    @FeatureEntryPoint(JHotDrawFeatures.CANVASTOOLBAR)
     protected JComponent createDisclosedComponent(int state) {
         JPanel p = null;
+        ResourceBundleUtil labels = ResourceBundleUtil.getBundle("org.jhotdraw.samples.svg.Labels");
+        GridBagConstraints gbc = new GridBagConstraints();
 
         switch (state) {
             case 1:
                  {
-                    p = new JPanel();
-                    p.setOpaque(false);
-
-                    p.removeAll();
-                    p.setBorder(new EmptyBorder(5, 5, 5, 8));
-                    ResourceBundleUtil labels = ResourceBundleUtil.getBundle("org.jhotdraw.samples.svg.Labels");
-                    GridBagLayout layout = new GridBagLayout();
-                    p.setLayout(layout);
-                    GridBagConstraints gbc;
-                    AbstractButton btn;
-
-                    // Fill color
-                    btn = ButtonFactory.createDrawingColorButton(editor,
-                            CANVAS_FILL_COLOR, ButtonFactory.HSV_COLORS, ButtonFactory.HSV_COLORS_COLUMN_COUNT,
-                            "attribute.canvasFillColor", labels, null, new Rectangle(3, 3, 10, 10));
-                    btn.setUI((PaletteButtonUI) PaletteButtonUI.createUI(btn));
-                    new DrawingComponentRepainter(editor, btn);
-                    ((JPopupButton) btn).setAction(null, null);
-                    gbc = new GridBagConstraints();
-                    gbc.gridy = 0;
-                    gbc.gridwidth=2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    p.add(btn, gbc);
-
-                    // Opacity slider
-                    JPopupButton opacityPopupButton = new JPopupButton();
-                    JAttributeSlider opacitySlider = new JAttributeSlider(JSlider.VERTICAL, 0, 100, 100);
-                    opacitySlider.setUI((SliderUI) PaletteSliderUI.createUI(opacitySlider));
-                    opacitySlider.setScaleFactor(100d);
-                    new DrawingAttributeEditorHandler<Double>(CANVAS_FILL_OPACITY, opacitySlider, editor);
-                    opacityPopupButton.add(opacitySlider);
-                    labels.configureToolBarButton(opacityPopupButton, "attribute.canvasFillOpacity");
-                    opacityPopupButton.setUI((PaletteButtonUI) PaletteButtonUI.createUI(opacityPopupButton));
-                    opacityPopupButton.setIcon(
-                            new DrawingOpacityIcon(editor, CANVAS_FILL_OPACITY, CANVAS_FILL_COLOR, null, getClass().getResource(labels.getString("attribute.canvasFillOpacity.icon")),
-                            new Rectangle(5, 5, 6, 6), new Rectangle(4, 4, 7, 7)));
-                    new DrawingComponentRepainter(editor, opacityPopupButton);
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 2;
-                    gbc.gridy = 0;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.insets = new Insets(0, 3, 0, 0);
-                    p.add(opacityPopupButton, gbc);
-
-                    // Width and height fields
-                    JLabel widthLabel, heightLabel;
-                    JAttributeTextField<Double> widthField, heightField;
-
-                    widthLabel = new javax.swing.JLabel();
-                    heightLabel = new javax.swing.JLabel();
-                    widthField = new JAttributeTextField<Double>();
-                    heightField = new JAttributeTextField<Double>();
-
-                    widthLabel.setUI((LabelUI) PaletteLabelUI.createUI(widthLabel));
-                    widthLabel.setLabelFor(widthField);
-                    widthLabel.setToolTipText(labels.getString("attribute.canvasWidth.toolTipText"));
-                    widthLabel.setText(labels.getString("attribute.canvasWidth.text")); // NOI18N
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 0;
-                    gbc.gridy = 1;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.fill = GridBagConstraints.BOTH;
-                    gbc.insets = new Insets(3, 0, 0, 0);
-                    p.add(widthLabel, gbc);
-
-                    widthField.setUI((TextUI) PaletteFormattedTextFieldUI.createUI(widthField));
-                    widthField.setColumns(3);
-                    widthField.setToolTipText(labels.getString("attribute.canvasWidth.toolTipText"));
-                    widthField.setFormatterFactory(JavaNumberFormatter.createFormatterFactory(1d, 4096d, 1d, true, false));
-                    widthField.setHorizontalAlignment(JTextField.LEADING);
-                    new DrawingAttributeEditorHandler<Double>(CANVAS_WIDTH, widthField, editor);
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 1;
-                    gbc.gridy = 1;
-                    gbc.gridwidth=2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.fill = GridBagConstraints.BOTH;
-                    gbc.insets = new Insets(3, 3, 0, 0);
-                    p.add(widthField, gbc);
-
-                    heightLabel.setUI((LabelUI) PaletteLabelUI.createUI(heightLabel));
-                    heightLabel.setLabelFor(widthField);
-                    heightLabel.setToolTipText(labels.getString("attribute.canvasHeight.toolTipText"));
-                    heightLabel.setText(labels.getString("attribute.canvasHeight.text")); // NOI18N
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 0;
-                    gbc.gridy = 2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.fill = GridBagConstraints.BOTH;
-                    gbc.insets = new Insets(3, 0, 0, 0);
-                    p.add(heightLabel, gbc);
-
-                    heightField.setUI((TextUI) PaletteFormattedTextFieldUI.createUI(widthField));
-                    heightField.setColumns(3);
-                    heightField.setToolTipText(labels.getString("attribute.canvasHeight.toolTipText"));
-                    heightField.setFormatterFactory(JavaNumberFormatter.createFormatterFactory(1d, 4096d, 1d, true, false));
-                    heightField.setHorizontalAlignment(JTextField.LEADING);
-                    new DrawingAttributeEditorHandler<Double>(CANVAS_HEIGHT, heightField, editor);
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 1;
-                    gbc.gridy = 2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.fill = GridBagConstraints.BOTH;
-                    gbc.insets = new Insets(3, 3, 0, 0);
-                    gbc.gridwidth=2;
-                    p.add(heightField, gbc);
-
+                    p = this.createPanel(false, new EmptyBorder(5, 5, 5, 8));
+                   p = this.createHalfToolBar(p, labels, gbc);
                 }
                 break;
             case 2:
                  {
-                    p = new JPanel();
-                    p.setOpaque(false);
+                    p = this.createPanel(false, new EmptyBorder(5, 5, 5, 8));
 
-                    JPanel p1 = new JPanel(new GridBagLayout());
-                    JPanel p2 = new JPanel(new GridBagLayout());
-                    JPanel p3 = new JPanel(new GridBagLayout());
-                    p1.setOpaque(false);
-                    p2.setOpaque(false);
-                    p3.setOpaque(false);
-
-                    p.removeAll();
-                    p.setBorder(new EmptyBorder(5, 5, 5, 8));
-                    ResourceBundleUtil labels = ResourceBundleUtil.getBundle("org.jhotdraw.samples.svg.Labels");
-                    GridBagLayout layout = new GridBagLayout();
-                    p.setLayout(layout);
-                    GridBagConstraints gbc;
-                    AbstractButton btn;
-
-                    // Fill color field with button
-                    JAttributeTextField<Color> colorField = new JAttributeTextField<Color>();
-                    colorField.setColumns(7);
-                    colorField.setToolTipText(labels.getString("attribute.canvasFillColor.toolTipText"));
-                    colorField.putClientProperty("Palette.Component.segmentPosition", "first");
-                    colorField.setUI((PaletteFormattedTextFieldUI) PaletteFormattedTextFieldUI.createUI(colorField));
-                    colorField.setFormatterFactory(ColorFormatter.createFormatterFactory());
-                    colorField.setHorizontalAlignment(JTextField.LEFT);
-                    new DrawingAttributeEditorHandler<Color>(CANVAS_FILL_COLOR, colorField, editor);
-                    gbc = new GridBagConstraints();
-                    gbc.gridwidth=2;
-                    gbc.fill = GridBagConstraints.HORIZONTAL;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    p1.add(colorField, gbc);
-                    btn = ButtonFactory.createDrawingColorButton(editor,
-                            CANVAS_FILL_COLOR, ButtonFactory.HSV_COLORS, ButtonFactory.HSV_COLORS_COLUMN_COUNT,
-                            "attribute.canvasFillColor", labels, null, new Rectangle(3, 3, 10, 10));
-                    btn.setUI((PaletteButtonUI) PaletteButtonUI.createUI(btn));
-                    new DrawingComponentRepainter(editor, btn);
-                    ((JPopupButton) btn).setAction(null, null);
-                    gbc = new GridBagConstraints();
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    p1.add(btn, gbc);
-
-                    // Opacity field with slider
-                    JAttributeTextField<Double> opacityField = new JAttributeTextField<Double>();
-                    opacityField.setColumns(3);
-                    opacityField.setToolTipText(labels.getString("attribute.figureOpacity.toolTipText"));
-                    opacityField.setHorizontalAlignment(JAttributeTextField.RIGHT);
-                    opacityField.putClientProperty("Palette.Component.segmentPosition", "first");
-                    opacityField.setUI((PaletteFormattedTextFieldUI) PaletteFormattedTextFieldUI.createUI(opacityField));
-                    opacityField.setFormatterFactory(JavaNumberFormatter.createFormatterFactory(0d, 100d, 100d, true, false));
-                    opacityField.setHorizontalAlignment(JTextField.LEADING);
-                    new DrawingAttributeEditorHandler<Double>(CANVAS_FILL_OPACITY, opacityField, editor);
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 0;
-                    gbc.gridy = 1;
-                    gbc.insets = new Insets(3, 0, 0, 0);
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    p1.add(opacityField, gbc);
-                    JPopupButton opacityPopupButton = new JPopupButton();
-                    JAttributeSlider opacitySlider = new JAttributeSlider(JSlider.VERTICAL, 0, 100, 100);
-                    opacitySlider.setUI((SliderUI) PaletteSliderUI.createUI(opacitySlider));
-                    opacitySlider.setScaleFactor(100d);
-                    new DrawingAttributeEditorHandler<Double>(CANVAS_FILL_OPACITY, opacitySlider, editor);
-                    opacityPopupButton.add(opacitySlider);
-                    labels.configureToolBarButton(opacityPopupButton, "attribute.canvasFillOpacity");
-                    opacityPopupButton.setUI((PaletteButtonUI) PaletteButtonUI.createUI(opacityPopupButton));
-                    opacityPopupButton.setIcon(
-                            new DrawingOpacityIcon(editor, CANVAS_FILL_OPACITY, CANVAS_FILL_COLOR, null, getClass().getResource(labels.getString("attribute.canvasFillOpacity.icon")),
-                            new Rectangle(5, 5, 6, 6), new Rectangle(4, 4, 7, 7)));
-                    new DrawingComponentRepainter(editor, opacityPopupButton);
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 1;
-                    gbc.gridy = 1;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.insets = new Insets(3, 0, 0, 0);
-                    p1.add(opacityPopupButton, gbc);
-
-                    // Width and height fields
-                    JLabel widthLabel, heightLabel;
-                    JAttributeTextField<Double> widthField, heightField;
-
-                    widthLabel = new javax.swing.JLabel();
-                    heightLabel = new javax.swing.JLabel();
-                    widthField = new JAttributeTextField<Double>();
-                    heightField = new JAttributeTextField<Double>();
-
-                    widthLabel.setUI((LabelUI) PaletteLabelUI.createUI(widthLabel));
-                    widthLabel.setLabelFor(widthField);
-                    widthLabel.setToolTipText(labels.getString("attribute.canvasWidth.toolTipText"));
-                    widthLabel.setText(labels.getString("attribute.canvasWidth.text")); // NOI18N
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 0;
-                    gbc.gridy = 2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.fill = GridBagConstraints.BOTH;
-                    gbc.insets = new Insets(3, 0, 0, 0);
-                    p3.add(widthLabel, gbc);
-
-                    widthField.setUI((TextUI) PaletteFormattedTextFieldUI.createUI(widthField));
-                    widthField.setColumns(3);
-                    widthField.setToolTipText(labels.getString("attribute.canvasWidth.toolTipText"));
-                    widthField.setFormatterFactory(JavaNumberFormatter.createFormatterFactory(1d, 4096d, 1d, true, false));
-                    widthField.setHorizontalAlignment(JTextField.LEADING);
-                    new DrawingAttributeEditorHandler<Double>(CANVAS_WIDTH, widthField, editor);
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 1;
-                    gbc.gridy = 2;
-                    gbc.gridwidth = 2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.fill = GridBagConstraints.BOTH;
-                    gbc.insets = new Insets(3, 3, 0, 0);
-                    p3.add(widthField, gbc);
-
-                    heightLabel.setUI((LabelUI) PaletteLabelUI.createUI(heightLabel));
-                    heightLabel.setLabelFor(widthField);
-                    heightLabel.setToolTipText(labels.getString("attribute.canvasHeight.toolTipText"));
-                    heightLabel.setText(labels.getString("attribute.canvasHeight.text")); // NOI18N
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 3;
-                    gbc.gridy = 2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.fill = GridBagConstraints.BOTH;
-                    gbc.insets = new Insets(3, 3, 0, 0);
-                    p3.add(heightLabel, gbc);
-
-                    heightField.setUI((TextUI) PaletteFormattedTextFieldUI.createUI(widthField));
-                    heightField.setColumns(3);
-                    heightField.setToolTipText(labels.getString("attribute.canvasHeight.toolTipText"));
-                    heightField.setFormatterFactory(JavaNumberFormatter.createFormatterFactory(1d, 4096d, 1d, true, false));
-                    heightField.setHorizontalAlignment(JTextField.LEADING);
-                    new DrawingAttributeEditorHandler<Double>(CANVAS_HEIGHT, heightField, editor);
-                    gbc = new GridBagConstraints();
-                    gbc.gridx = 4;
-                    gbc.gridy = 2;
-                    gbc.gridwidth = 2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    gbc.fill = GridBagConstraints.BOTH;
-                    gbc.insets = new Insets(3, 3, 0, 0);
-                    p3.add(heightField, gbc);
-
-                    // Add horizontal strips
-                    gbc = new GridBagConstraints();
-                    gbc.gridy = 0;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    p.add(p1, gbc);
-                    gbc = new GridBagConstraints();
-                    gbc.gridy = 1;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    p.add(p2, gbc);
-                    gbc = new GridBagConstraints();
-                    gbc.gridy = 2;
-                    gbc.anchor = GridBagConstraints.FIRST_LINE_START;
-                    p.add(p3, gbc);
+                    JPanel p1 = this.createPanel(false, null);
+                    JPanel p2 = this.createPanel(false, null);
+                    JPanel p3 = this.createPanel(false, null);
+                    this.createFullToolBar(p, p1, p2, p3, labels, gbc);
                 }
                 break;
         }
@@ -320,6 +223,7 @@ public class CanvasToolBar extends AbstractToolBar {
     }
 
     @Override
+    @FeatureEntryPoint(JHotDrawFeatures.CANVASTOOLBAR)
     protected String getID() {
         return "canvas";
     }
