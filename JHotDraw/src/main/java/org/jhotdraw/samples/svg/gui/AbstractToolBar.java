@@ -37,6 +37,7 @@ public /*abstract*/ class AbstractToolBar extends JDisclosureToolBar {
     private JComponent[] panels;
     protected Preferences prefs;
     protected PropertyChangeListener eventHandler;
+    GridBagConstraints gbc;
 
     /** Creates new form. */
     @FeatureEntryPoint(JHotDrawFeatures.TOOL_PALETTE)
@@ -120,7 +121,7 @@ public /*abstract*/ class AbstractToolBar extends JDisclosureToolBar {
         return 0;
     }
 
-    protected JPanel createPanel(boolean isOpaque, EmptyBorder border){
+    protected final JPanel createPanel(boolean isOpaque, EmptyBorder border){
         //Instantiate new JPanel component
         JPanel p = new JPanel();
         //Remove all default components
@@ -137,18 +138,16 @@ public /*abstract*/ class AbstractToolBar extends JDisclosureToolBar {
         return p;
     }
 
-    protected GridBagConstraints createGridBagConstraints(Integer gridx, Integer gridy, Integer gridheight, Integer gridwidth, Integer anchor,Integer fill, Insets insets){
-        GridBagConstraints gbc = new GridBagConstraints();
+    protected final void setGridBagConstraints(Integer gridx, Integer gridy, Integer gridheight, Integer gridwidth, Integer anchor,Integer fill, Insets insets){
+        this.gbc = new GridBagConstraints();
 
-        if(gridx != null){ gbc.gridx = gridx; }
-        if(gridy != null){ gbc.gridy = gridy; }
-        if(gridheight != null){ gbc.gridheight = gridheight; }
-        if(gridwidth != null){ gbc.gridwidth = gridwidth; }
-        if(anchor != null){ gbc.anchor = anchor; }
-        if(fill != null){ gbc.fill = fill; }
-        if(insets != null){ gbc.insets = insets; }
-
-        return gbc;
+        if(gridx != null){ this.gbc.gridx = gridx; }
+        if(gridy != null){ this.gbc.gridy = gridy; }
+        if(gridheight != null){ this.gbc.gridheight = gridheight; }
+        if(gridwidth != null){ this.gbc.gridwidth = gridwidth; }
+        if(anchor != null){ this.gbc.anchor = anchor; }
+        if(fill != null){ this.gbc.fill = fill; }
+        if(insets != null){ this.gbc.insets = insets; }
     }
 
     private class ProxyPanel extends JPanel {
