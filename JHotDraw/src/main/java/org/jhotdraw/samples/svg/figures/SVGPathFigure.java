@@ -81,29 +81,26 @@ public class SVGPathFigure extends AbstractAttributedCompositeFigure implements 
                 }
 
                 if (!drawingArea.isEmpty()) {
-
-                    BufferedImage buf = new BufferedImage(
-                            Math.max(1, (int) ((2 + drawingArea.width) * g.getTransform().getScaleX())),
-                            Math.max(1, (int) ((2 + drawingArea.height) * g.getTransform().getScaleY())),
-                            BufferedImage.TYPE_INT_ARGB);
-                    Graphics2D gr = buf.createGraphics();
-                    gr.scale(g.getTransform().getScaleX(), g.getTransform().getScaleY());
-                    gr.translate((int) -drawingArea.x, (int) -drawingArea.y);
-                    gr.setRenderingHints(g.getRenderingHints());
-                    drawFigure(gr);
-                    gr.dispose();
-                    Composite savedComposite = g.getComposite();
-                    g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, (float) opacity));
-                    g.drawImage(buf, (int) drawingArea.x, (int) drawingArea.y,
-                            2 + (int) drawingArea.width, 2 + (int) drawingArea.height, null);
-                    g.setComposite(savedComposite);
+                    drawInNotEmptyDrawingArea(g, opacity);
                 }
             } else {
                 drawFigure(g);
             }
         }
     }
-
+    
+    private void drawInNotEmptyDrawingArea(Graphics2D g, double opacity){
+                    Rectangle2D.Double drawingArea = getDrawingArea();
+                    BufferedImage buf = new BufferedImage(
+                            Math.max(1, (int) ((2 + drawingArea.width) * g.getTransform().getScaleX())),
+                            Math.max(1, (int) ((2 + drawingArea.height) * g.getTransform().getScaleY())),
+                            BufferedImage.TYPE_INT_ARGB);
+                    DrawingAreaHandler handler = new DrawingAreaHandler();
+                    Graphics2D gr = handler.drawingAreaCreater(g, opacity, drawingArea, buf);
+                    drawFigure(gr);
+                    handler.drawingAreaDispose(g, opacity, drawingArea, gr, buf);
+    }
+    
     public void drawFigure(Graphics2D g) {
         AffineTransform savedTransform = null;
         if (TRANSFORM.get(this) != null) {
